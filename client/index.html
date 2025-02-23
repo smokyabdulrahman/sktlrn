@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Chat</title>
+	<style>
+		body {
+			background-color: darkgrey;
+			margin: 0;
+		}
+
+		.root {
+			display: flex;
+			align-items: center;
+			flex-direction: column;
+			height: 100dvh;
+		}
+
+		.grid {
+			overflow: auto;
+			will-change: transform;
+			width: 100vw;
+		}
+
+		.grid .fake-height {}
+
+
+		.grid input {
+			margin: 0;
+			transition: opacity 0.5s;
+			animation: 0.4s ease 0s 1 normal none running fade-in;
+		}
+
+		@keyframes fade-in {
+			0% {
+				opacity: 0;
+			}
+
+			100% {
+				opacity: 1;
+			}
+		}
+	</style>
+</head>
+
+<body>
+	<div class="root">
+		<h1>WebSocket Chat</h1>
+		<!-- 
+	<form action="" onsubmit="sendMessage(event)">
+		<input type="text" id="messageText" autocomplete="off" />
+		<button>Send</button>
+	</form>
+	<ul id='messages'>
+	</ul>
+
+	-->
+		<div class="grid" id="checkbox-container">
+			<div class="fake-height" id="checkbox-container-fake-height">
+				<div id="checkbox-container-rendered-list"></div>
+			</div>
+
+		</div>
+	</div>
+	<script type="module" src=index.js></script>
+</body>
+
+</html>
