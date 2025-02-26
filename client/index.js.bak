@@ -13,21 +13,17 @@ import { WebsocketManager } from "./websocket.js";
 /**
  * @namespace
  * @property {number}             latestUpdateTimeStamp - Timestamp of last dom update.
- * @property {Uint8Array}         checkboxes            - Checkboxes byte array represinting their state.
- * @property {number}             checkboxesBitArray    - Checkboxes bit array represinting their state.
- * @property {HTMLInputElement[]} checkboxElementsPool  - Checkbox input rendered elements.
+ * @property {Uint8Array}         checkboxes            - Checkboxes bit array represinting their state.
+ * @property {HTMLInputElement} checkboxElementsPool  - Checkbox input rendered elements.
  * @property {number}             totalChecked          - Number of checked check boxes.
  */
 const state = {
   latestUpdateTimeStamp: Date.now(),
   checkboxes: new Uint8Array(),
-  checkboxesBitArray: [],
   checkboxElementsPool: [],
   totalChecked: 0,
 };
 
-const MINIMAP_ID = "minimap";
-const MINIMAP_CONTAINER_ID = "minimap-container";
 const CHECKBOX_CONTAINER_ID = "checkbox-container";
 const CHECKBOX_CONTAINER_FAKE_HEIGHT_DIV_ID = "checkbox-container-fake-height";
 const CHECKBOX_CONTAINER_RENDERED_LIST = "checkbox-container-rendered-list";
@@ -38,9 +34,6 @@ let CELLS_IN_VIEW = 1;
 let COLS = 1;
 let ROWS = 1_000_000; // num of checkboxes / view width / cell width
 let CONTAINER_WIDTH_PX = 0;
-/** @type {HTMLCanvasElement} */
-const minimap = document.getElementById(MINIMAP_ID);
-const minimapContainer = document.getElementById(MINIMAP_CONTAINER_ID);
 const checkboxContainer = document.getElementById(CHECKBOX_CONTAINER_ID);
 const checkboxContainerFakeHeight = document.getElementById(
   CHECKBOX_CONTAINER_FAKE_HEIGHT_DIV_ID,
@@ -54,32 +47,22 @@ const calculateDimensions = () => {
   COLS = Math.floor(CONTAINER_WIDTH_PX / CHECKBOX_WIDTH_PX);
   ROWS = Math.ceil((state.checkboxes.length * 8) / COLS);
   checkboxContainerFakeHeight.style.height = `${ROWS * CHECKBOX_HEIGHT_PX}px`;
-  CELLS_IN_VIEW =
-    Math.floor(checkboxContainer.offsetHeight / CHECKBOX_HEIGHT_PX) * COLS;
+  CELLS_IN_VIEW = (checkboxContainer.offsetHeight / CHECKBOX_HEIGHT_PX) * COLS;
 };
 
 if (
   checkboxContainer &&
   checkboxContainerFakeHeight &&
-  checkboxContainerRenderedList &&
-  minimapContainer
+  checkboxContainerRenderedList
 ) {
-  document.getElementById("button").addEventListener("click", (_) => {
-    createCanvasFromBitsArray(state.checkboxesBitArray);
-    minimapContainer.toggleAttribute("hidden");
-  });
-  minimapContainer.addEventListener("click", (_) => {
-    minimapContainer.toggleAttribute("hidden");
-  });
-  checkboxContainerFakeHeight.addEventListener("click", handleCheckboxClick);
+  checkboxContainerRenderedList.addEventListener("click", handleCheckboxClick);
   calculateDimensions();
   window.onresize = (_) => {
     calculateDimensions();
-    createCanvasFromBitsArray(state.checkboxesBitArray);
   };
   checkboxContainer.addEventListener("scroll", handleCheckboxContainerScroll);
 } else {
-  throw Error("Containers were not found.");
+  console.warn("Container with class 'checkbox-container' not found.");
 }
 
 const ws = new WebsocketManager("ws://localhost:8000/ws", 15, 300, (event) => {
@@ -98,31 +81,28 @@ function updateCells() {
     0,
   );
   const translateY = firstVisibleRow * CHECKBOX_HEIGHT_PX;
-  //checkboxContainerRenderedList.style.transform = `translateY(${translateY}px)`;
+  checkboxContainerRenderedList.style.transform = `translateY(${translateY}px)`;
 
-  for (let index = 0; index < state.checkboxElementsPool.length; index++) {
-    const checkbox = state.checkboxElementsPool[index];
+  state.checkboxElementsPool.forEach((checkbox, index) => {
     const row = firstVisibleRow + Math.floor(index / COLS);
-    const col = index % COLS;
-    const dataIndex = row * COLS + col;
+    if (row >= 0 && row < ROWS) {
+      const col = index % COLS;
+      const dataIndex = row * COLS + col;
 
-    const byteLocation = Math.floor(dataIndex / 8);
-    const byte = state.checkboxes[byteLocation];
-    const bitOrder = dataIndex % 8; // if 0 then most significant bit and 7 is the least significant
-    const value = (byte >> (7 - bitOrder)) & 1;
+      const byteLocation = Math.floor(dataIndex / 8);
+      const byte = state.checkboxes[byteLocation];
+      const bitOrder = dataIndex % 8; // if 0 then most significant bit and 7 is the least significant
+      const value = (byte >> (7 - bitOrder)) & 1;
 
-    const stateLength = state.checkboxes.length * 8;
-    checkbox.hidden = dataIndex >= stateLength || dataIndex < 0;
-    checkbox.dataset.index = dataIndex;
-    checkbox.id = `checkbox-${dataIndex}`;
-    checkbox.checked = value === 1;
-    checkbox.style.transform = `translateY(${translateY}px)`;
-  }
+      checkbox.dataset.index = dataIndex;
+      checkbox.id = `checkbox-${dataIndex}`;
+      checkbox.checked = value === 1;
+    }
+  });
 }
 
 // used to throttle processing scroll events
 let ticking = false;
-let lastKnownScrollTop;
 
 /**
  * Handles the click event for checkboxes inside a grid container.
@@ -130,9 +110,6 @@ let lastKnownScrollTop;
  */
 function handleCheckboxContainerScroll(event) {
   if (!event.target) return;
-  // if (lastKnownScrollTop == checkboxContainer.scrollTop) return;
-
-  lastKnownScrollTop = checkboxContainer.scrollTop;
 
   if (!ticking) {
     window.requestAnimationFrame(() => {
@@ -180,7 +157,6 @@ function setCheckboxValue(index, value) {
     value == 1 ? byte | (1 << (7 - bitOrder)) : byte & ~(1 << (7 - bitOrder));
 
   state.checkboxes[byteLocation] = modifiedByte;
-  state.checkboxesBitArray[index] = value;
 }
 
 /**
@@ -210,7 +186,7 @@ function handleInitMessage(message) {
   state.checkboxes = message.body;
   state.latestUpdateTimeStamp = Date.now();
   calculateDimensions();
-  state.checkboxesBitArray = [];
+  const bitArray = [];
   const lastIndex = message.body.length - 1;
   let loopCondition = 0;
 
@@ -218,11 +194,10 @@ function handleInitMessage(message) {
     loopCondition =
       lastIndex == index ? (7 - message.header.lastByteLength + 1) % 8 : 0;
     for (let i = 7; i >= loopCondition; i--) {
-      state.checkboxesBitArray.push((byte >> i) & 1);
+      bitArray.push((byte >> i) & 1);
     }
   }
-  renderCheckboxes(state.checkboxesBitArray);
-  createCanvasFromBitsArray(state.checkboxesBitArray);
+  renderCheckboxes(bitArray);
 }
 
 /**
@@ -245,10 +220,10 @@ function handleToggledMessage(message) {
  */
 function renderCheckboxes(bits) {
   state.checkboxElementsPool.length = 0; // clear array
-  checkboxContainerFakeHeight.innerHTML = ""; // Clear previous checkboxes
+  checkboxContainerRenderedList.innerHTML = ""; // Clear previous checkboxes
 
   for (const [index, bit] of bits.entries()) {
-    if (index > CELLS_IN_VIEW * 1.25) {
+    if (index > CELLS_IN_VIEW) {
       break;
     }
     const checkbox = document.createElement("input");
@@ -260,33 +235,7 @@ function renderCheckboxes(bits) {
     checkbox.dataset.index = index;
     checkbox.id = `checkbox-${index}`;
 
-    checkboxContainerFakeHeight.appendChild(checkbox);
+    checkboxContainerRenderedList.appendChild(checkbox);
     state.checkboxElementsPool.push(checkbox);
   }
-}
-
-/**
- * Draws the state of the checkboxes on a canvas, for fun.
- * @param {Uint8Array} data
- */
-function createCanvasFromBitsArray(data) {
-  /** @type {HTMLDivElement} */
-  let height, width;
-  height = width = Math.sqrt(data.length);
-  minimap.width = width;
-  minimap.height = height;
-
-  let ctx = minimap.getContext("2d");
-  let imgData = ctx.createImageData(width, height);
-
-  let color;
-  for (let i = 0; i < data.length; i++) {
-    color = data[i] == 1 ? 0 : 255;
-    imgData.data[i * 4 + 0] = color;
-    imgData.data[i * 4 + 1] = color;
-    imgData.data[i * 4 + 2] = color;
-    imgData.data[i * 4 + 3] = 255;
-  }
-  ctx.putImageData(imgData, 0, 0);
-  return minimap;
 }

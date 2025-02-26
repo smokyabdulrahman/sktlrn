@@ -25,7 +25,6 @@ class ServerMessageHeader:
         a = bytes(
             [(type_as_int << 5) | (self.last_byte_length << 2) | self.remaining_2_bits]
         )
-        print(f"SMH to_bytes: {a}")
         return a
 
 
@@ -37,7 +36,6 @@ class ServerMessage:
     def to_bytes(self) -> bytes:
         byte_array = bytearray(self.header.to_bytes())
         byte_array.extend(self.body)
-        print(f"SM to_bytes: {byte_array}")
         return byte_array
 
 

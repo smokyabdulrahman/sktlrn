@@ -9,9 +9,7 @@ from schema import (
     ServerMessageType,
 )
 from websocket import ConnectionManager
-from logging import getLogger
-
-logger = getLogger(__name__)
+import logfire
 
 
 class ClientHandler:
@@ -36,14 +34,15 @@ class ClientHandler:
         await ws.send_bytes(msg)
 
     async def handle(self, data: bytes, from_: WebSocket) -> None:
-        logger.info("data received", extra={"data": data})
+        logfire.info("data received", data=data)
         client_message = ClientMessage.from_bytes(data)
         match client_message.header.type_:
             case ClientMessageType.TOGGLE:
                 await self.__handle_toggle_message(client_message, from_)
             case _:
-                logger.error(
-                    f"Unhandled client message type: {client_message.header.type_}"
+                logfire.error(
+                    "Unhandled client message type: {type_}",
+                    type_=client_message.header.type_,
                 )
                 raise ValueError(
                     f"Unhandled client message type: {client_message.header.type_}"
