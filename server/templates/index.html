@@ -20,28 +20,69 @@
 				"wdth" 100;
 		}
 
+		.button {
+			display: inline-block;
+			outline: 0;
+			border: none;
+			cursor: pointer;
+			font-weight: 600;
+			border-radius: 4px;
+			height: 40px;
+			background-color: #9147ff;
+			color: white;
+			padding: 0 25px;
+
+		}
+
+		.button:hover {
+			background-color: #772ce8;
+		}
+
 		.header {
-			grid-template: "title title title title"
-				". me me ."
-				". you you you";
+			grid-template: "title title title"
+				". me ."
+				". you .";
 			display: grid;
 			justify-content: space-between;
 			align-items: baseline;
-			width: 100vw;
 			border-bottom: 5px solid #FFDCCC;
+			padding-bottom: 10px;
+			padding: 10px;
+		}
+
+		.subtitle {
+			font-weight: 200;
 		}
 
 		.header .title {
-			text-align: center;
 			grid-area: title;
+			display: flex;
+			align-items: center;
+			gap: 5px;
+			justify-content: center;
+			flex-direction: column;
+
+		}
+
+
+		.text-center {
+			text-align: center;
+		}
+
+		.text-dyn-xs {
+			font-size: 1rem;
+		}
+
+		.text-dyn-sm {
+			font-size: 1.5rem;
 		}
 
 		.text-dyn-md {
-			font-size: clamp(1rem, 1rem + 0.15vw, 2.5rem);
+			font-size: 2.5rem;
 		}
 
 		.text-dyn-lg {
-			font-size: clamp(1.75rem, 1rem + 2vw, 3.5rem);
+			font-size: 3.5rem;
 		}
 
 		.header .me {
@@ -49,6 +90,7 @@
 			display: flex;
 			align-items: center;
 			gap: 5px;
+			justify-content: center;
 		}
 
 		.header .you {
@@ -125,11 +167,23 @@
 
 <body>
 	<div class="root">
-		<div class="header" id="button">
-			<h1 class="title text-dyn-lg">Sktlearn</h1>
-			<h2 class="me text-dyn-md">
-				<span>a website by <a href="https://www.linkedin.com/in/aalrahma/">alrahma</a></span>
-				<a href="google.com">
+		<div class="header">
+			<h1 class="title text-center ">
+				<span class="text-dyn-lg">Sktlearn</span>
+				<span class="subtitle text-dyn-md">Purpose: I wanted to have fun learning new things
+					with minimal
+					usage of dependencies. Mostly
+					websockets, payload
+					optimization, and DOM management techniques ex. virtual scrolling.</span>
+
+				<a class="subtitle text-dyn-md" href="https://onemillioncheckboxes.com/" target="_blank"
+					rel="noopener noreferrer">
+					Inspired from</a>
+			</h1>
+			<h2 class="me text-dyn-sm">
+				<span>a website by <a href="https://www.linkedin.com/in/aalrahma/" target="_blank"
+						rel="noopener noreferrer">alrahma⇗</a></span>
+				<a href="https://github.com/smokyabdulrahman" target="_blank" rel="noopener noreferrer">
 					<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
 						viewBox="0 -3.5 256 256" preserveAspectRatio="xMinYMin meet">
 						<g fill="#161614">
@@ -144,9 +198,9 @@
 					</svg>
 				</a>
 			</h2>
-			<h1 class="you">
-				hello you are the best
-			</h1>
+			<button id="button" class="you text-center button text-dyn-xs">
+				1M Checkboxes' State Minimap
+			</button>
 		</div>
 		<div class="grid" id="checkbox-container">
 			<div class="fake-height" id="checkbox-container-fake-height">
@@ -160,7 +214,7 @@
 			<canvas id="minimap"></canvas>
 		</div>
 	</div>
-	<script type="module" src=index.js></script>
+	<script type="module" src="/static/index.js"></script>
 </body>
 
 </html>

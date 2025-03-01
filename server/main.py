@@ -1,4 +1,7 @@
-from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from starlette.endpoints import WebSocketEndpoint
 import logfire
 
@@ -7,28 +10,35 @@ from config import Configuration
 from handler import ClientHandler
 from websocket import ConnectionManager
 
-
-app = FastAPI()
-logfire.configure()
-logfire.instrument_fastapi(app, capture_headers=True)
-
-
-@app.get("/")
-def read_root():
-    return {
-        "message": "what are you trying to do boss? please just go and enjoy the game."
-    }
-
+# TODOs:
+# [] pipe all websocket messages from client into redis for better scailing
+# [] use shared db to store state
 
 config = Configuration()  # type: ignore - not sure why this line is complaining
 connection_manager = ConnectionManager()
 checkboxes = Checkboxes(config.num_of_checkboxes)
-client_handler = ClientHandler(checkboxes, connection_manager)
+client_handler = ClientHandler(
+    checkboxes, connection_manager, config.broadcast_diff_window_ms
+)
 
 
-# TODOs:
-# [] pipe all websocket messages from client into redis for better scailing
-# [] accumualte messages every 500ms, then broadcast
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await client_handler.start()
+    yield
+
+
+templates = Jinja2Templates(directory="templates")
+app = FastAPI(lifespan=lifespan)
+logfire.configure()
+logfire.instrument_fastapi(app, capture_headers=True)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/")
+def read_root(request: Request):
+    return templates.TemplateResponse(request, "index.html")
 
 
 class CheckboxesWebSocketEndpoint(WebSocketEndpoint):

@@ -1,0 +1,10 @@
+services:
+  sktlearn:
+    image: docker.io/smokyabdulrahman/sktlearn
+    ports:
+      - "8888:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://sktlearn:8000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

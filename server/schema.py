@@ -5,6 +5,7 @@ from enum import StrEnum
 class ServerMessageType(StrEnum):
     INIT = "INIT"  # 0b000_____
     TOGGLED = "TOGGLED"
+    DIFF = "DIFF"
 
     def to_int(self) -> int:
         match self:
@@ -12,6 +13,8 @@ class ServerMessageType(StrEnum):
                 return 0
             case ServerMessageType.TOGGLED:
                 return 1
+            case ServerMessageType.DIFF:
+                return 2
 
 
 @dataclass

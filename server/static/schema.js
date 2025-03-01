@@ -4,6 +4,7 @@
 export class ServerMessageType {
   static INIT = "INIT";
   static TOGGLED = "TOGGLED";
+  static DIFF = "DIFF";
 
   /**
    * Returns {ServerMessageType} from a number
@@ -17,6 +18,8 @@ export class ServerMessageType {
         return ServerMessageType.INIT;
       case 1:
         return ServerMessageType.TOGGLED;
+      case 2:
+        return ServerMessageType.DIFF;
     }
     console.error(
       "Number: ${num} doesn't map to any known server message type.",

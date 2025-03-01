@@ -1,6 +1,20 @@
 from typing import Literal
 
 
+def write_uint24(num: int, little_endian: bool = True) -> bytes:
+    """Write a 3-byte (24-bit) unsigned integer from an int.
+
+    Args:
+        num (int): The bytes object containing the data.
+        little_endian (bool): If True, read as little-endian; otherwise, big-endian.
+
+    Returns:
+        bytes: The 24-bit unsigned integer representation in bytes.
+    """
+    byte_order = "little" if little_endian else "big"
+    return int.to_bytes(num, length=3, byteorder=byte_order, signed=False)
+
+
 def read_uint24(data: bytes, offset: int = 0, little_endian: bool = True) -> int:
     """Reads a 3-byte (24-bit) unsigned integer from a bytes object.
 

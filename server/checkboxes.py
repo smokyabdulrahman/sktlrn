@@ -10,6 +10,7 @@ class Checkboxes:
         self.checkboxes: list[CheckboxState] = [0 for _ in range(0, length)]
 
     def set(self, index: int, value: CheckboxState) -> None:
+        # this is thread safe
         self.checkboxes[index] = value
 
     def get_state(self) -> list[CheckboxState]:

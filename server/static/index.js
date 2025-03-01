@@ -5,10 +5,6 @@ import {
 } from "./schema.js";
 import { setUint24, getIntFromBytes } from "./bits.js";
 import { WebsocketManager } from "./websocket.js";
-// TODOs:
-// [] prevent users from zooming out
-// - check if zoom changed, hide checkboxes and show alert screen (site doesn't work for other than 100% zoom)
-// [] based on previous point, add a map mode, where we use a canvas to render an 1000*1000 board
 
 /**
  * @namespace
@@ -32,8 +28,8 @@ const CHECKBOX_CONTAINER_ID = "checkbox-container";
 const CHECKBOX_CONTAINER_FAKE_HEIGHT_DIV_ID = "checkbox-container-fake-height";
 const CHECKBOX_CONTAINER_RENDERED_LIST = "checkbox-container-rendered-list";
 const CHECKBOX_CLASS = "checkbox";
-const CHECKBOX_WIDTH_PX = 30;
-const CHECKBOX_HEIGHT_PX = 30;
+const CHECKBOX_WIDTH_PX = 50;
+const CHECKBOX_HEIGHT_PX = 50;
 let CELLS_IN_VIEW = 1;
 let COLS = 1;
 let ROWS = 1_000_000; // num of checkboxes / view width / cell width
@@ -82,11 +78,17 @@ if (
   throw Error("Containers were not found.");
 }
 
-const ws = new WebsocketManager("ws://localhost:8000/ws", 15, 300, (event) => {
-  const receivedBytes = new Uint8Array(event.data);
-  const serverMessage = parseServerMessage(receivedBytes);
-  handleMessage(serverMessage);
-});
+const socketProtocol = location.protocol === "https:" ? "wss://" : "ws://";
+const ws = new WebsocketManager(
+  socketProtocol + location.host + "/ws",
+  15,
+  300,
+  (event) => {
+    const receivedBytes = new Uint8Array(event.data);
+    const serverMessage = parseServerMessage(receivedBytes);
+    handleMessage(serverMessage);
+  },
+);
 
 /**
  * Update rendering state of the checkbox pool to reflect the stored state
@@ -196,6 +198,9 @@ function handleMessage(message) {
     case ServerMessageType.TOGGLED:
       handleToggledMessage(message);
       break;
+    case ServerMessageType.DIFF:
+      handleDiffMessage(message);
+      break;
     default:
       throw Error(`no handler for message of type ${message.header.type}`);
   }
@@ -233,6 +238,22 @@ function handleInitMessage(message) {
 function handleToggledMessage(message) {
   const checkboxIndex = getIntFromBytes(message.body, 0, 3);
   setCheckboxValue(checkboxIndex, message.header.remainingTwoBits);
+  window.requestAnimationFrame(() => {
+    updateCells();
+  });
+}
+
+/**
+ * Handles diff message
+ * @param {ServerMessage} message
+ * @returns {void}
+ */
+function handleDiffMessage(message) {
+  // i + 3 as each index is of size 3 bytes
+  for (let i = 0; i < message.body.length; i = i + 3) {
+    const checkboxIndex = getIntFromBytes(message.body, i, 3);
+    setCheckboxValue(checkboxIndex, message.header.remainingTwoBits);
+  }
   window.requestAnimationFrame(() => {
     updateCells();
   });
