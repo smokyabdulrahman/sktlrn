@@ -8,5 +8,4 @@ dependencies = [
     "fastapi[standard]>=0.115.8",
     "logfire[fastapi]>=3.6.2",
     "pydantic-settings>=2.7.1",
-    "redis>=5.2.1",
 ]
